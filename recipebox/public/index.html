@@ -1,0 +1,65 @@
+<!doctype html><html lang="en-GB"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f3d2b"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png">
+<title>Recipe Box</title>
+<style>
+:root{--bg:#f5f6ef;--card:#fff;--ink:#1d2a22;--mute:#69766c;--acc:#1f3d2b;--pop:#e8a33d;--line:#dfe3d6}
+@media(prefers-color-scheme:dark){:root{--bg:#121a15;--card:#1b261f;--ink:#eef1e8;--mute:#9aa89d;--acc:#8fc7a0;--pop:#e8a33d;--line:#2a382f}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+h1,h2{font-family:"Iowan Old Style",Georgia,serif;font-weight:700;margin:0}
+header{padding:20px 20px 8px}h1{font-size:34px;letter-spacing:-.5px;color:var(--acc)}
+input{width:100%;padding:13px 16px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;margin-top:12px}
+main{padding:12px 16px 110px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{background:var(--card);border-radius:18px;overflow:hidden;border:1px solid var(--line);cursor:pointer}
+.card .ph{aspect-ratio:1;background:var(--line) center/cover}.card h2{font-size:16px;line-height:1.25;padding:10px 12px 2px}.card p{margin:0;padding:0 12px 12px;color:var(--mute);font-size:13px}
+.empty{grid-column:1/-1;text-align:center;color:var(--mute);padding:60px 20px}
+.fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));width:60px;height:60px;border-radius:30px;border:0;background:var(--pop);color:#1d2a22;font-size:32px;box-shadow:0 6px 18px #0004}
+.sheet{position:fixed;inset:0;background:#0007;display:none;align-items:flex-end}.sheet.on{display:flex}
+.sheet div{background:var(--bg);width:100%;padding:20px;border-radius:24px 24px 0 0}
+.btn{width:100%;margin-top:12px;padding:14px;border-radius:14px;border:0;background:var(--acc);color:var(--bg);font:600 16px system-ui}
+.btn.ghost{background:none;color:var(--mute);border:1px solid var(--line)}
+.hero{height:260px;background:var(--line) center/cover}.det{padding:20px 20px 60px}.det h1{font-size:30px;margin-bottom:6px}
+.meta{color:var(--mute);margin-bottom:18px}h2.s{font-size:22px;margin:22px 0 8px;color:var(--acc)}
+.ing{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}.ing input{width:22px;height:22px;margin:0;accent-color:var(--acc)}
+.ing:has(:checked) span{text-decoration:line-through;color:var(--mute)}
+ol{padding-left:22px}li{margin-bottom:12px}
+.back{position:fixed;top:calc(12px + env(safe-area-inset-top));left:12px;width:42px;height:42px;border-radius:21px;border:0;background:var(--card);color:var(--ink);font-size:22px;box-shadow:0 2px 10px #0003}
+a{color:var(--acc)}#toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:20px;opacity:0;transition:.2s;pointer-events:none}#toast.on{opacity:1}
+</style></head><body><div id="app"></div>
+<div class="sheet" id="sheet"><div><h2>Save a recipe</h2><input id="u" placeholder="Paste a link" inputmode="url"><button class="btn" id="go">Save recipe</button><button class="btn ghost" id="x">Cancel</button></div></div>
+<div id="toast"></div>
+<script>
+let R=JSON.parse(localStorage.getItem('rb')||'[]'),q='',cur=null;
+const $=s=>document.querySelector(s),put=()=>localStorage.setItem('rb',JSON.stringify(R));
+const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2600)};
+function render(){const a=$('#app');
+ if(cur){const r=R.find(x=>x.id===cur);if(!r){cur=null;return render()}
+  a.innerHTML=`<button class="back" id="bk">‹</button><div class="hero" style="background-image:url('${esc(r.image)}')"></div><div class="det"><h1>${esc(r.name)}</h1>
+  <div class="meta">${[r.time?r.time+' min':'',r.servings?'Serves '+esc(r.servings):''].filter(Boolean).join(', ')}</div>
+  ${r.ingredients.length?`<h2 class="s">Ingredients</h2>`+r.ingredients.map(i=>`<label class="ing"><input type="checkbox"><span>${esc(i)}</span></label>`).join(''):''}
+  ${r.steps.length?`<h2 class="s">Method</h2><ol>`+r.steps.map(s=>`<li>${esc(s)}</li>`).join('')+`</ol>`:''}
+  ${r.notes?`<h2 class="s">Notes</h2><p>${esc(r.notes)}</p>`:''}
+  ${!r.ingredients.length&&!r.steps.length?'<p class="meta">No recipe found on that page, so the link is saved instead.</p>':''}
+  <p><a href="${esc(r.url)}" target="_blank" rel="noopener">Open original</a></p><button class="btn ghost" id="del">Delete recipe</button></div>`;
+  $('#bk').onclick=()=>history.back();$('#del').onclick=()=>{if(confirm('Delete this recipe?')){R=R.filter(x=>x.id!==cur);put();history.back()}};return}
+ const f=R.filter(r=>(r.name+r.ingredients.join(' ')).toLowerCase().includes(q));
+ a.innerHTML=`<header><h1>Recipe Box</h1><input id="q" placeholder="Search recipes" value="${esc(q)}"></header><main>`+
+ (f.length?f.map(r=>`<div class="card" data-id="${r.id}"><div class="ph" style="background-image:url('${esc(r.image)}')"></div><h2>${esc(r.name)}</h2><p>${r.time?r.time+' min':new URL(r.url).hostname.replace('www.','')}</p></div>`).join(''):
+ `<div class="empty">${R.length?'No matches.':'No recipes yet. Share a recipe link to Recipe Box from any app, or tap + to paste one.'}</div>`)+
+ `</main><button class="fab" id="add">+</button>`;
+ $('#q').oninput=e=>{q=e.target.value.toLowerCase();const p=e.target.selectionStart;render();$('#q').focus();$('#q').setSelectionRange(p,p)};
+ $('#add').onclick=()=>{$('#sheet').classList.add('on');$('#u').focus()};
+ document.querySelectorAll('.card').forEach(c=>c.onclick=()=>{cur=c.dataset.id;history.pushState({d:1},'');render();scrollTo(0,0)})}
+async function add(raw){const m=(raw||'').match(/https?:\/\/[^\s]+/);if(!m)return toast('No link found');const url=m[0];
+ if(R.some(r=>r.url===url))return toast('Already saved');toast('Saving recipe');
+ try{const d=await(await fetch('/.netlify/functions/parse?url='+encodeURIComponent(url))).json();if(d.error)throw 0;
+  R.unshift({id:Date.now().toString(36),url,...d});put();cur=null;render();toast('Saved')}catch{toast("Couldn't read that page")}}
+addEventListener('popstate',()=>{cur=null;render()});
+$('#x').onclick=()=>$('#sheet').classList.remove('on');
+$('#go').onclick=()=>{$('#sheet').classList.remove('on');add($('#u').value);$('#u').value=''};
+render();
+const p=new URLSearchParams(location.search);if(p.has('url')||p.has('text')){history.replaceState(null,'','/');add([p.get('url'),p.get('text'),p.get('title')].join(' '))}
+if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');
+</script></body></html>
